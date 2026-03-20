@@ -3,14 +3,27 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'states/auth_state.dart';
+import 'states/polls_state.dart';
 import 'ui/app_scaffold.dart';
 import 'ui/login_page.dart';
 import 'ui/signup_page.dart';
+import 'ui/poll_edit_page.dart';
+import 'ui/poll_page.dart';
+import 'ui/polls_page.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AuthState(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthState(),
+        ),
+        ChangeNotifierProxyProvider<AuthState, PollsState>(
+          create: (_) => PollsState(),
+          update: (_, authState, pollsState) =>
+              pollsState!..setAuthToken(authState.token),
+        ),
+      ],
       child: const App(),
     ),
   );
@@ -36,7 +49,19 @@ class App extends StatelessWidget {
       routes: {
         '/polls': (_) => const AppScaffold(
               title: 'Événements',
-              body: Center(child: Text('Liste des événements à venir')),
+              body: PollsPage(),
+            ),
+        '/polls/detail': (_) => const AppScaffold(
+              title: 'Détail de l’événement',
+              body: PollPage(),
+            ),
+        '/polls/create': (_) => const AppScaffold(
+              title: 'Créer un événement',
+              body: PollEditPage(),
+            ),
+        '/polls/edit': (_) => const AppScaffold(
+              title: 'Modifier un événement',
+              body: PollEditPage(),
             ),
         '/login': (_) => const AppScaffold(
               title: 'Connexion',
