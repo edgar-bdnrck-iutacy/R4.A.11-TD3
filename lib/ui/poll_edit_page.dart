@@ -14,9 +14,9 @@ class PollEditPage extends StatefulWidget {
 class _PollEditPageState extends State<PollEditPage> {
   final _formKey = GlobalKey<FormState>();
 
-  String title = '';
+  String name = '';
   String description = '';
-  DateTime? date;
+  DateTime? eventDate;
   String? error;
   bool initialized = false;
 
@@ -27,7 +27,7 @@ class _PollEditPageState extends State<PollEditPage> {
   Future<void> _pickDate() async {
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: date ?? DateTime.now(),
+      initialDate: eventDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
       locale: const Locale('fr'),
@@ -35,15 +35,15 @@ class _PollEditPageState extends State<PollEditPage> {
 
     if (pickedDate != null) {
       setState(() {
-        date = pickedDate;
+        eventDate = pickedDate;
       });
     }
   }
 
   Future<void> _submit(Poll? poll) async {
-    if (!_formKey.currentState!.validate() || date == null) {
+    if (!_formKey.currentState!.validate() || eventDate == null) {
       setState(() {
-        error = date == null ? 'La date est obligatoire.' : null;
+        error = eventDate == null ? 'La date est obligatoire.' : null;
       });
       return;
     }
@@ -52,15 +52,15 @@ class _PollEditPageState extends State<PollEditPage> {
 
     final result = poll == null
         ? await pollsState.createPoll(
-            title: title,
+            name: name,
             description: description,
-            date: date!,
+            eventDate: eventDate!,
           )
         : await pollsState.updatePoll(
             id: poll.id,
-            title: title,
+            name: name,
             description: description,
-            date: date!,
+            eventDate: eventDate!,
           );
 
     if (!mounted) {
@@ -82,9 +82,9 @@ class _PollEditPageState extends State<PollEditPage> {
     final theme = Theme.of(context);
 
     if (!initialized) {
-      title = poll?.title ?? '';
+      name = poll?.name ?? '';
       description = poll?.description ?? '';
-      date = poll?.date;
+      eventDate = poll?.eventDate;
       initialized = true;
     }
 
@@ -98,11 +98,11 @@ class _PollEditPageState extends State<PollEditPage> {
             child: Column(
               children: [
                 TextFormField(
-                  initialValue: title,
+                  initialValue: name,
                   decoration: const InputDecoration(
                     labelText: 'Titre',
                   ),
-                  onChanged: (value) => title = value,
+                  onChanged: (value) => name = value,
                   validator: _validateRequired,
                 ),
                 const SizedBox(height: 16),
@@ -120,9 +120,9 @@ class _PollEditPageState extends State<PollEditPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        date == null
+                        eventDate == null
                             ? 'Aucune date sélectionnée'
-                            : 'Date : ${date!.day.toString().padLeft(2, '0')}/${date!.month.toString().padLeft(2, '0')}/${date!.year}',
+                            : "Date : ${eventDate!.day.toString().padLeft(2, '0')}/${eventDate!.month.toString().padLeft(2, '0')}/${eventDate!.year}",
                       ),
                     ),
                     TextButton(

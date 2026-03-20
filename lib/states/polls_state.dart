@@ -100,6 +100,9 @@ class PollsState extends ChangeNotifier {
         },
       );
 
+      debugPrint('GET /polls/$id -> ${response.statusCode}');
+      debugPrint('GET /polls/$id body -> ${response.body}');
+
       if (response.statusCode == HttpStatus.ok) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         _currentPoll = Poll.fromJson(data);
@@ -111,7 +114,8 @@ class PollsState extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return Result.failure('Impossible de charger cet événement.');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('fetchPollById exception -> $e');
       _isLoading = false;
       notifyListeners();
       return Result.failure('Une erreur est survenue lors du chargement.');
@@ -119,9 +123,9 @@ class PollsState extends ChangeNotifier {
   }
 
   Future<Result<Unit, String>> createPoll({
-    required String title,
+    required String name,
     required String description,
-    required DateTime date,
+    required DateTime eventDate,
   }) async {
     try {
       final response = await http.post(
@@ -131,14 +135,16 @@ class PollsState extends ChangeNotifier {
           if (_token != null) HttpHeaders.authorizationHeader: 'Bearer $_token',
         },
         body: json.encode({
-          'title': title,
+          'name': name,
           'description': description,
-          'date': date.toIso8601String(),
+          'eventDate': eventDate.toIso8601String(),
         }),
       );
 
-      if (response.statusCode == HttpStatus.ok ||
-          response.statusCode == HttpStatus.created) {
+      debugPrint('POST /polls -> ${response.statusCode}');
+      debugPrint('POST /polls body -> ${response.body}');
+
+      if (response.statusCode == HttpStatus.created) {
         await fetchPolls();
         return Result.success(unit);
       }
@@ -149,16 +155,17 @@ class PollsState extends ChangeNotifier {
       }
 
       return Result.failure('Impossible de créer l’événement.');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('createPoll exception -> $e');
       return Result.failure('Une erreur est survenue lors de la création.');
     }
   }
 
   Future<Result<Unit, String>> updatePoll({
     required int id,
-    required String title,
+    required String name,
     required String description,
-    required DateTime date,
+    required DateTime eventDate,
   }) async {
     try {
       final response = await http.put(
@@ -168,11 +175,14 @@ class PollsState extends ChangeNotifier {
           if (_token != null) HttpHeaders.authorizationHeader: 'Bearer $_token',
         },
         body: json.encode({
-          'title': title,
+          'name': name,
           'description': description,
-          'date': date.toIso8601String(),
+          'eventDate': eventDate.toIso8601String(),
         }),
       );
+
+      debugPrint('PUT /polls/$id -> ${response.statusCode}');
+      debugPrint('PUT /polls/$id body -> ${response.body}');
 
       if (response.statusCode == HttpStatus.ok) {
         await fetchPolls();
@@ -186,12 +196,13 @@ class PollsState extends ChangeNotifier {
       }
 
       return Result.failure('Impossible de modifier l’événement.');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('updatePoll exception -> $e');
       return Result.failure('Une erreur est survenue lors de la modification.');
     }
   }
 
-  Future<Result<Unit, String>> votePoll(int pollId, String vote) async {
+  Future<Result<Unit, String>> votePoll(int pollId, bool status) async {
     try {
       final response = await http.post(
         Uri.parse('${Configs.baseUrl}/polls/$pollId/votes'),
@@ -200,14 +211,22 @@ class PollsState extends ChangeNotifier {
           if (_token != null) HttpHeaders.authorizationHeader: 'Bearer $_token',
         },
         body: json.encode({
-          'vote': vote,
+          'status': status,
         }),
       );
 
-      if (response.statusCode == HttpStatus.ok ||
-          response.statusCode == HttpStatus.created) {
-        await fetchPollById(pollId);
+      debugPrint('POST /polls/$pollId/votes -> ${response.statusCode}');
+      debugPrint('POST /polls/$pollId/votes body -> ${response.body}');
+
+      if (response.statusCode == HttpStatus.created) {
+        final refreshedPollResult = await fetchPollById(pollId);
         await fetchPolls();
+
+        if (!refreshedPollResult.isSuccess) {
+          return Result.failure(refreshedPollResult.failure!);
+        }
+
+        notifyListeners();
         return Result.success(unit);
       }
 
@@ -216,7 +235,8 @@ class PollsState extends ChangeNotifier {
       }
 
       return Result.failure('Impossible d’enregistrer votre vote.');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('votePoll exception -> $e');
       return Result.failure('Une erreur est survenue lors du vote.');
     }
   }

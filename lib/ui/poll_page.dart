@@ -15,10 +15,17 @@ class PollPage extends StatefulWidget {
 
 class _PollPageState extends State<PollPage> {
   String? error;
+  bool _hasLoaded = false;
+  bool _isSubmittingVote = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    if (_hasLoaded) {
+      return;
+    }
+    _hasLoaded = true;
 
     final poll = ModalRoute.of(context)?.settings.arguments as Poll?;
     if (poll != null) {
@@ -36,17 +43,30 @@ class _PollPageState extends State<PollPage> {
     }
   }
 
-  Future<void> _vote(String vote) async {
+  Future<void> _vote(bool status) async {
+    if (_isSubmittingVote) {
+      return;
+    }
+
     final currentPoll = context.read<PollsState>().currentPoll;
     if (currentPoll == null) {
       return;
     }
 
-    final result = await context.read<PollsState>().votePoll(currentPoll.id, vote);
+    setState(() {
+      _isSubmittingVote = true;
+    });
+
+    final result =
+        await context.read<PollsState>().votePoll(currentPoll.id, status);
 
     if (!mounted) {
       return;
     }
+
+    setState(() {
+      _isSubmittingVote = false;
+    });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -96,12 +116,12 @@ class _PollPageState extends State<PollPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            poll.title,
+            poll.name,
             style: theme.textTheme.headlineSmall,
           ),
           const SizedBox(height: 12),
           Text(
-            'Date : ${dateFormatter.format(poll.date)}',
+            'Date : ${dateFormatter.format(poll.eventDate)}',
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: 16),
@@ -115,12 +135,29 @@ class _PollPageState extends State<PollPage> {
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
-          Text('Oui : ${poll.nbYes ?? 0}'),
-          Text('Non : ${poll.nbNo ?? 0}'),
-          Text('Peut-être : ${poll.nbMaybe ?? 0}'),
+          Text('Je participe : ${poll.yesCount}'),
+          Text('Je ne participe pas : ${poll.noCount}'),
           const SizedBox(height: 8),
-          if (poll.userVote != null)
-            Text('Votre vote : ${poll.userVote!}'),
+          if (authState.currentUser != null)
+            Builder(
+              builder: (context) {
+                final currentUserVote = poll.votes
+                    .where((v) => v.user.id == authState.currentUser!.id)
+                    .cast<PollVote?>()
+                    .firstWhere(
+                      (v) => v != null,
+                      orElse: () => null,
+                    );
+
+                if (currentUserVote == null) {
+                  return const SizedBox.shrink();
+                }
+
+                return Text(
+                  'Votre vote : ${currentUserVote.status ? 'Je participe' : 'Je ne participe pas'}',
+                );
+              },
+            ),
           const SizedBox(height: 24),
           if (authState.isLoggedIn) ...[
             Wrap(
@@ -128,15 +165,11 @@ class _PollPageState extends State<PollPage> {
               runSpacing: 12,
               children: [
                 ElevatedButton(
-                  onPressed: () => _vote('yes'),
+                  onPressed: _isSubmittingVote ? null : () => _vote(true),
                   child: const Text('Je participe'),
                 ),
                 ElevatedButton(
-                  onPressed: () => _vote('maybe'),
-                  child: const Text('Peut-être'),
-                ),
-                ElevatedButton(
-                  onPressed: () => _vote('no'),
+                  onPressed: _isSubmittingVote ? null : () => _vote(false),
                   child: const Text('Je ne participe pas'),
                 ),
               ],

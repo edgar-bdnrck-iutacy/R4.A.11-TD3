@@ -103,8 +103,8 @@ class _PollsPageState extends State<PollsPage> {
                 return Card(
                   child: ListTile(
                     leading: const Icon(Icons.event),
-                    title: Text(poll.title),
-                    subtitle: Text(dateFormatter.format(poll.date)),
+                    title: Text(poll.name),
+                    subtitle: Text(dateFormatter.format(poll.eventDate)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.pushNamed(
