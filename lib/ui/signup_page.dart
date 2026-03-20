@@ -39,13 +39,13 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    final success = await context.read<AuthState>().signup(username, password);
+    final result = await context.read<AuthState>().signup(username, password);
 
     if (!mounted) {
       return;
     }
 
-    if (success) {
+    if (result.isSuccess) {
       Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -54,7 +54,7 @@ class _SignupPageState extends State<SignupPage> {
       );
     } else {
       setState(() {
-        error = 'Une erreur est survenue lors de l’inscription.';
+        error = result.failure;
       });
     }
   }

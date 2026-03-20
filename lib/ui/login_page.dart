@@ -28,15 +28,17 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final user = await context.read<AuthState>().login(username, password);
+    final result = await context.read<AuthState>().login(username, password);
 
-    if (user != null) {
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/polls', (_) => false);
-      }
+    if (!mounted) {
+      return;
+    }
+
+    if (result.isSuccess) {
+      Navigator.pushNamedAndRemoveUntil(context, '/polls', (_) => false);
     } else {
       setState(() {
-        error = 'Une erreur est survenue.';
+        error = result.failure;
       });
     }
   }

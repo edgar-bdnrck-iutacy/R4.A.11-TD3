@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../configs.dart';
 import '../models/user.dart';
+import '../result.dart';
 
 class AuthState extends ChangeNotifier {
   User? _currentUser;
@@ -15,7 +16,9 @@ class AuthState extends ChangeNotifier {
   String? get token => _token;
   bool get isLoggedIn => _currentUser != null && _token != null;
 
-  Future<User?> login(String username, String password) async {
+  Future<Result<User, String>> login(String username, String password) async {
+    String error;
+
     final loginResponse = await http.post(
       Uri.parse('${Configs.baseUrl}/auth/login'),
       headers: {
@@ -42,15 +45,22 @@ class AuthState extends ChangeNotifier {
         _currentUser =
             User.fromJson(json.decode(userResponse.body) as Map<String, dynamic>);
         notifyListeners();
-        return _currentUser;
+        return Result.success(_currentUser!);
       }
+
+      error = 'Une erreur est survenue.';
+    } else {
+      error = loginResponse.statusCode == HttpStatus.badRequest ||
+              loginResponse.statusCode == HttpStatus.unauthorized
+          ? 'Identifiant ou mot de passe incorrect.'
+          : 'Une erreur est survenue.';
     }
 
     logout();
-    return null;
+    return Result.failure(error);
   }
 
-  Future<bool> signup(String username, String password) async {
+  Future<Result<Unit, String>> signup(String username, String password) async {
     final response = await http.post(
       Uri.parse('${Configs.baseUrl}/auth/signup'),
       headers: {
@@ -62,8 +72,16 @@ class AuthState extends ChangeNotifier {
       }),
     );
 
-    return response.statusCode == HttpStatus.ok ||
-        response.statusCode == HttpStatus.created;
+    if (response.statusCode == HttpStatus.ok ||
+        response.statusCode == HttpStatus.created) {
+      return Result.success(unit);
+    }
+
+    if (response.statusCode == HttpStatus.badRequest) {
+      return Result.failure('Impossible de créer le compte.');
+    }
+
+    return Result.failure('Une erreur est survenue lors de l’inscription.');
   }
 
   void logout() {
