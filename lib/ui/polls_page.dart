@@ -6,6 +6,7 @@ import '../models/poll.dart';
 import '../states/auth_state.dart';
 import '../states/polls_state.dart';
 
+// Page principale affichant la liste des événements.
 class PollsPage extends StatefulWidget {
   const PollsPage({super.key});
 
@@ -19,6 +20,9 @@ class _PollsPageState extends State<PollsPage> {
   @override
   void initState() {
     super.initState();
+    // On déclenche le chargement juste après le premier affichage.
+    // Ici, le projet ne passe pas par FutureBuilder :
+    // le Future est lancé manuellement, puis Provider met l'UI à jour.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final result = await context.read<PollsState>().fetchPolls();
       if (!mounted) {
@@ -34,6 +38,7 @@ class _PollsPageState extends State<PollsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // watch reconstruit la page quand PollsState ou AuthState changent.
     final pollsState = context.watch<PollsState>();
     final authState = context.watch<AuthState>();
     final polls = pollsState.polls;
@@ -72,6 +77,7 @@ class _PollsPageState extends State<PollsPage> {
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(
                 onPressed: () {
+                  // Navigation vers le formulaire de création.
                   Navigator.pushNamed(context, '/polls/create');
                 },
                 icon: const Icon(Icons.add),
@@ -81,6 +87,7 @@ class _PollsPageState extends State<PollsPage> {
           ),
         Expanded(
           child: RefreshIndicator(
+            // Permet de relancer fetchPolls() par geste utilisateur.
             onRefresh: () async {
               final result = await context.read<PollsState>().fetchPolls();
               if (!mounted) {
@@ -107,6 +114,7 @@ class _PollsPageState extends State<PollsPage> {
                     subtitle: Text(dateFormatter.format(poll.eventDate)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
+                      // On passe l'objet Poll à la page détail via les arguments de route.
                       Navigator.pushNamed(
                         context,
                         '/polls/detail',

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../states/auth_state.dart';
 
+// Structure commune aux pages : AppBar, Drawer et zone de contenu.
+// Centraliser ce widget évite de répéter le même code dans chaque écran.
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
     this.title,
@@ -16,6 +18,8 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // watch s'abonne aux changements d'AuthState.
+    // Quand notifyListeners() est appelé, ce Scaffold est reconstruit.
     final authState = context.watch<AuthState>();
     final currentUser = authState.currentUser;
 
@@ -47,6 +51,7 @@ class AppScaffold extends StatelessWidget {
               leading: const Icon(Icons.event),
               title: const Text('Événements'),
               onTap: () {
+                // Navigation vers la liste principale en réinitialisant l'historique.
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   '/polls',
@@ -83,6 +88,7 @@ class AppScaffold extends StatelessWidget {
                 leading: const Icon(Icons.logout),
                 title: const Text('Déconnexion'),
                 onTap: () {
+                  // read est adapté aux callbacks : on lit l'état sans s'abonner.
                   context.read<AuthState>().logout();
                   Navigator.pushNamedAndRemoveUntil(
                     context,

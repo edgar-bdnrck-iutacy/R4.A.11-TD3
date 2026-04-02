@@ -8,6 +8,9 @@ import '../configs.dart';
 import '../models/poll.dart';
 import '../result.dart';
 
+// Etat global lié aux événements.
+// Cette classe centralise les appels HTTP et les données partagées
+// entre la liste, le détail, la création, la modification et le vote.
 class PollsState extends ChangeNotifier {
   String? _token;
   List<Poll> _polls = [];
@@ -18,10 +21,15 @@ class PollsState extends ChangeNotifier {
   Poll? get currentPoll => _currentPoll;
   bool get isLoading => _isLoading;
 
+  // Le token est injecté par main.dart via ChangeNotifierProxyProvider.
+  // PollsState n'a donc pas à connaître directement AuthState.
   void setAuthToken(String? token) {
     _token = token;
   }
 
+  // Récupère la liste des événements depuis l'API.
+  // Le booléen _isLoading permet aux pages d'afficher un loader,
+  // puis notifyListeners() déclenche la mise à jour de l'interface.
   Future<Result<List<Poll>, String>> fetchPolls() async {
     _isLoading = true;
     notifyListeners();
@@ -43,6 +51,7 @@ class PollsState extends ChangeNotifier {
 
         List<dynamic>? rawList;
 
+        // Le code accepte plusieurs formats de réponse possibles de l'API.
         if (decoded is List) {
           rawList = decoded;
         } else if (decoded is Map<String, dynamic>) {
@@ -63,6 +72,7 @@ class PollsState extends ChangeNotifier {
           );
         }
 
+        // Chaque élément JSON est converti en objet Poll grâce à fromJson.
         _polls = rawList
             .map((item) => Poll.fromJson(item as Map<String, dynamic>))
             .toList();
@@ -87,6 +97,7 @@ class PollsState extends ChangeNotifier {
     }
   }
 
+  // Charge le détail complet d'un événement puis le stocke dans currentPoll.
   Future<Result<Poll, String>> fetchPollById(int id) async {
     _isLoading = true;
     notifyListeners();
@@ -122,6 +133,7 @@ class PollsState extends ChangeNotifier {
     }
   }
 
+  // Envoie un POST pour créer un événement, puis recharge la liste.
   Future<Result<Unit, String>> createPoll({
     required String name,
     required String description,
@@ -161,6 +173,7 @@ class PollsState extends ChangeNotifier {
     }
   }
 
+  // Envoie un PUT pour modifier un événement, puis resynchronise la liste et le détail.
   Future<Result<Unit, String>> updatePoll({
     required int id,
     required String name,
@@ -202,6 +215,8 @@ class PollsState extends ChangeNotifier {
     }
   }
 
+  // Enregistre le vote de l'utilisateur, puis recharge les données côté serveur
+  // pour garder les compteurs et la liste cohérents.
   Future<Result<Unit, String>> votePoll(int pollId, bool status) async {
     try {
       final response = await http.post(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/poll.dart';
 import '../states/polls_state.dart';
 
+// Page de formulaire utilisée à la fois pour créer et modifier un événement.
 class PollEditPage extends StatefulWidget {
   const PollEditPage({super.key});
 
@@ -20,10 +21,12 @@ class _PollEditPageState extends State<PollEditPage> {
   String? error;
   bool initialized = false;
 
+  // Validation minimale des champs obligatoires du formulaire.
   String? _validateRequired(String? value) {
     return value == null || value.isEmpty ? 'Ce champ est obligatoire.' : null;
   }
 
+  // Ouvre le sélecteur de date natif de Flutter.
   Future<void> _pickDate() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -34,12 +37,14 @@ class _PollEditPageState extends State<PollEditPage> {
     );
 
     if (pickedDate != null) {
+      // setState est nécessaire pour réafficher la date choisie dans l'interface.
       setState(() {
         eventDate = pickedDate;
       });
     }
   }
 
+  // Selon qu'un Poll est fourni ou non, on appelle createPoll() ou updatePoll().
   Future<void> _submit(Poll? poll) async {
     if (!_formKey.currentState!.validate() || eventDate == null) {
       setState(() {
@@ -78,9 +83,12 @@ class _PollEditPageState extends State<PollEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Les arguments de navigation contiennent l'événement à modifier.
     final poll = ModalRoute.of(context)?.settings.arguments as Poll?;
     final theme = Theme.of(context);
 
+    // On initialise les champs une seule fois depuis les arguments.
+    // Sinon, chaque rebuild écraserait la saisie en cours de l'utilisateur.
     if (!initialized) {
       name = poll?.name ?? '';
       description = poll?.description ?? '';

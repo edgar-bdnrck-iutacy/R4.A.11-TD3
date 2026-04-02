@@ -8,6 +8,9 @@ import '../configs.dart';
 import '../models/user.dart';
 import '../result.dart';
 
+// Etat global d'authentification.
+// ChangeNotifier permet de prévenir l'interface quand l'utilisateur connecté
+// ou le token changent.
 class AuthState extends ChangeNotifier {
   User? _currentUser;
   String? _token;
@@ -16,6 +19,10 @@ class AuthState extends ChangeNotifier {
   String? get token => _token;
   bool get isLoggedIn => _currentUser != null && _token != null;
 
+  // Tente une connexion en deux étapes :
+  // 1) POST /auth/login pour obtenir un token
+  // 2) GET /users/me pour récupérer les informations du compte connecté.
+  // async/await rend cette logique asynchrone plus lisible.
   Future<Result<User, String>> login(String username, String password) async {
     String error;
 
@@ -42,8 +49,12 @@ class AuthState extends ChangeNotifier {
       );
 
       if (userResponse.statusCode == HttpStatus.ok) {
+        // fromJson transforme la Map JSON renvoyée par l'API
+        // en objet User exploitable dans le code Dart.
         _currentUser =
             User.fromJson(json.decode(userResponse.body) as Map<String, dynamic>);
+        // notifyListeners() force les widgets qui utilisent context.watch<AuthState>()
+        // à se reconstruire avec le nouvel état.
         notifyListeners();
         return Result.success(_currentUser!);
       }
@@ -60,6 +71,8 @@ class AuthState extends ChangeNotifier {
     return Result.failure(error);
   }
 
+  // Inscription via l'API. Ici on ne connecte pas automatiquement l'utilisateur :
+  // la page d'inscription redirige ensuite vers la page de connexion.
   Future<Result<Unit, String>> signup(String username, String password) async {
     final response = await http.post(
       Uri.parse('${Configs.baseUrl}/auth/signup'),
@@ -84,6 +97,7 @@ class AuthState extends ChangeNotifier {
     return Result.failure('Une erreur est survenue lors de l’inscription.');
   }
 
+  // Déconnexion locale : on vide le token et l'utilisateur, puis on notifie l'UI.
   void logout() {
     _token = null;
     _currentUser = null;

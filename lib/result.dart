@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+// Type utilitaire représentant soit un succès, soit un échec.
+// Il évite de propager des exceptions jusque dans les widgets.
 abstract class Result<V extends Object, F extends Object> {
   factory Result.success(V value) => SuccessResult(value);
 
@@ -13,6 +15,7 @@ abstract class Result<V extends Object, F extends Object> {
 }
 
 @immutable
+// Cas où l'opération réussit et renvoie une valeur.
 class SuccessResult<V extends Object, F extends Object>
     implements Result<V, F> {
   const SuccessResult(this._value);
@@ -33,6 +36,7 @@ class SuccessResult<V extends Object, F extends Object>
 }
 
 @immutable
+// Cas où l'opération échoue et renvoie une erreur.
 class FailureResult<V extends Object, F extends Object>
     implements Result<V, F> {
   const FailureResult(this._failure);
@@ -52,6 +56,7 @@ class FailureResult<V extends Object, F extends Object>
   F get failure => _failure;
 }
 
+// Type vide utilisé quand une opération réussit sans donnée métier à retourner.
 class Unit {
   const Unit._();
 }

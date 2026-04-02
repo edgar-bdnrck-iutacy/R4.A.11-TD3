@@ -6,6 +6,8 @@ import '../models/poll.dart';
 import '../states/auth_state.dart';
 import '../states/polls_state.dart';
 
+// Page de détail d'un événement.
+// Elle affiche aussi l'état du vote et les actions possibles.
 class PollPage extends StatefulWidget {
   const PollPage({super.key});
 
@@ -22,6 +24,8 @@ class _PollPageState extends State<PollPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    // didChangeDependencies est un bon endroit pour lire ModalRoute.of(context),
+    // car les dépendances liées au BuildContext sont disponibles.
     if (_hasLoaded) {
       return;
     }
@@ -29,6 +33,7 @@ class _PollPageState extends State<PollPage> {
 
     final poll = ModalRoute.of(context)?.settings.arguments as Poll?;
     if (poll != null) {
+      // On recharge le détail depuis l'API pour récupérer les votes à jour.
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final result = await context.read<PollsState>().fetchPollById(poll.id);
         if (!mounted) {
@@ -43,6 +48,7 @@ class _PollPageState extends State<PollPage> {
     }
   }
 
+  // Envoie le vote à l'API tout en évitant les doubles clics.
   Future<void> _vote(bool status) async {
     if (_isSubmittingVote) {
       return;
@@ -57,6 +63,7 @@ class _PollPageState extends State<PollPage> {
       _isSubmittingVote = true;
     });
 
+    // Le Future est attendu avant de réactiver les boutons.
     final result =
         await context.read<PollsState>().votePoll(currentPoll.id, status);
 
@@ -141,6 +148,7 @@ class _PollPageState extends State<PollPage> {
           if (authState.currentUser != null)
             Builder(
               builder: (context) {
+                // Recherche le vote déjà enregistré pour l'utilisateur connecté.
                 final currentUserVote = poll.votes
                     .where((v) => v.user.id == authState.currentUser!.id)
                     .cast<PollVote?>()
@@ -179,6 +187,7 @@ class _PollPageState extends State<PollPage> {
           if (authState.currentUser?.isAdmin == true)
             ElevatedButton.icon(
               onPressed: () {
+                // Navigation vers la page d'édition avec l'événement courant.
                 Navigator.pushNamed(
                   context,
                   '/polls/edit',
